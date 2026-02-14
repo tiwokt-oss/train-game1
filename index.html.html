@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจำลองสัญญาณย่านเนินชนิดไฟสี ประเภทที่ 3</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --text-dark: #333;
+            --signal-bg: #1a1a1a;
+            --light-off: #444;
+            --light-on: #ffcc00;
+            --pole-color: #555;
+        }
+
+        body {
+            font-family: 'Sarabun', Tahoma, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 40px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        /* Signal Visuals */
+        .signal-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 200px;
+        }
+
+        .signal-head {
+            width: 120px;
+            height: 120px;
+            background-color: var(--signal-bg);
+            /* สร้างรูป 8 เหลี่ยม */
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            position: relative;
+            z-index: 2;
+        }
+
+        .light {
+            width: 24px;
+            height: 24px;
+            background-color: var(--light-off);
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+
+        .light.active {
+            background-color: var(--light-on);
+            box-shadow: 0 0 15px var(--light-on), inset 0 0 5px #fff;
+        }
+
+        /* ตำแหน่งไฟ 4 ดวง */
+        #light-top { top: 15px; left: 48px; }
+        #light-bottom { bottom: 15px; left: 48px; }
+        #light-left { top: 48px; left: 15px; }
+        #light-right { top: 48px; right: 15px; }
+
+        .signal-base {
+            width: 40px;
+            height: 30px;
+            background-color: #333;
+            z-index: 2;
+        }
+
+        .pole {
+            width: 12px;
+            height: 250px;
+            background: linear-gradient(to right, #333, #666, #333);
+            z-index: 1;
+        }
+
+        .ground {
+            width: 150px;
+            height: 30px;
+            background-color: #888;
+            border-radius: 5px 5px 0 0;
+            border-bottom: 3px solid #555;
+            z-index: 2;
+        }
+
+        /* Controls & Info */
+        .info-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .status-box {
+            background: #eef2f5;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid #3498db;
+        }
+
+        .status-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2980b9;
+            margin-bottom: 10px;
+        }
+
+        .status-desc { font-weight: bold; margin-bottom: 5px; }
+        .status-action { color: #c0392b; font-size: 1.2rem; font-weight: bold; }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            transition: background 0.2s;
+            text-align: left;
+            border-left: 4px solid transparent;
+        }
+
+        button:hover { background-color: #bdc3c7; }
+        
+        button.active {
+            background-color: #3498db;
+            color: white;
+            border-left: 4px solid #2980b9;
+        }
+
+        @media (max-width: 768px) {
+            .container { flex-direction: column; align-items: center; }
+            .controls { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>สัญญาณทางสับเปลี่ยนย่านเนินชนิดไฟสี</h1>
+    <h2>ประเภทที่ 3 (สำหรับพนักงานรถจักร)</h2>
+
+    <div class="container">
+        <div class="signal-container">
+            <div class="signal-head">
+                <div id="light-top" class="light"></div>
+                <div id="light-left" class="light"></div>
+                <div id="light-right" class="light"></div>
+                <div id="light-bottom" class="light"></div>
+            </div>
+            <div class="signal-base"></div>
+            <div class="pole"></div>
+            <div class="ground"></div>
+        </div>
+
+        <div class="info-container">
+            <div class="status-box">
+                <div class="status-title" id="display-name">ท่าปกติ</div>
+                <div class="status-desc" id="display-desc">โคม 4 ดวง เรียงเย็น มุมทแยง ไม่มีไฟทั้ง 4 ดวง</div>
+                <div class="status-action" id="display-action">งดการทำสับเปลี่ยน และรถจักรเดินผ่านได้</div>
+            </div>
+
+            <h3>เลือกสถานะสัญญาณเพื่อดูความหมาย</h3>
+            <div class="controls" id="btn-container">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // ข้อมูลสัญญาณตามคู่มือ
+        // ไฟเรียงตามลำดับ: [บน, ขวา, ล่าง, ซ้าย] (1 = เปิดไฟเหลือง, 0 = ปิดไฟ)
+        const signalsData = [
+            {
+                id: 'normal',
+                name: 'ท่าปกติ',
+                lights: [0, 0, 0, 0],
+                desc: 'ไม่มีไฟทั้ง 4 ดวง',
+                action: 'งดการทำสับเปลี่ยน และรถจักรสับเปลี่ยนเดินผ่านสัญญาณนี้ได้'
+            },
+            {
+                id: 'stop',
+                name: 'ท่าห้าม',
+                lights: [0, 1, 0, 1],
+                desc: 'ไฟสีเหลือง 2 ดวง (ซ้าย-ขวา)',
+                action: 'รถจักรหยุดเคลื่อนที่ทันที'
+            },
+            {
+                id: 'push-normal',
+                name: 'ท่าอนุญาต (ก)',
+                lights: [1, 0, 1, 0],
+                desc: 'ดวงบน และดวงล่าง มีไฟสีเหลือง',
+                action: 'ให้รถจักรดันรถขึ้นสู่ยอดเนินได้ด้วยความเร็วปกติ (ไม่เกิน 5 กม./ชม.)'
+            },
+            {
+                id: 'push-slow',
+                name: 'ท่าอนุญาต (ข)',
+                lights: [1, 1, 0, 1],
+                desc: 'ดวงบน 1 ดวง ดวงข้าง 2 ดวง มีไฟสีเหลือง เป็นรูปสามเหลี่ยม',
+                action: 'ให้รถจักรดันรถขึ้นสู่ยอดเนิน ด้วยความเร็วช้าลง'
+            },
+            {
+                id: 'push-slowest',
+                name: 'ท่าอนุญาต (ค)',
+                lights: [1, 0, 0, 0],
+                desc: 'ดวงบน 1 ดวง มีไฟสีเหลือง',
+                action: 'ให้รถจักรดันรถขึ้นสู่ยอดเนิน ด้วยความเร็วช้าที่สุด'
+            },
+            {
+                id: 'pull-normal',
+                name: 'ตลอดเวลา (ง)',
+                lights: [1, 1, 1, 1],
+                desc: 'มีไฟสีเหลือง 4 ดวง',
+                action: 'ให้รถจักรถอยหลังลากยอดเนิน ด้วยความเร็วปกติ (ไม่เกิน 5 กม./ชม.)'
+            },
+            {
+                id: 'pull-slow',
+                name: 'ตลอดเวลา (จ)',
+                lights: [0, 1, 1, 1],
+                desc: 'ดวงข้าง 2 ดวง และดวงล่าง 1 ดวง มีไฟสีเหลือง เป็นรูปสามเหลี่ยมยอดกลับลง',
+                action: 'ให้รถจักรถอยหลังลากยอดเนิน ด้วยความเร็วช้าลง'
+            }
+        ];
+
+        // ฟังก์ชันสำหรับอัปเดตหน้าจอ
+        function setSignal(index) {
+            const data = signalsData[index];
+
+            // อัปเดตไฟ [บน, ขวา, ล่าง, ซ้าย]
+            document.getElementById('light-top').classList.toggle('active', data.lights[0] === 1);
+            document.getElementById('light-right').classList.toggle('active', data.lights[1] === 1);
+            document.getElementById('light-bottom').classList.toggle('active', data.lights[2] === 1);
+            document.getElementById('light-left').classList.toggle('active', data.lights[3] === 1);
+
+            // อัปเดตข้อความ
+            document.getElementById('display-name').innerText = data.name;
+            document.getElementById('display-desc').innerText = data.desc;
+            document.getElementById('display-action').innerText = data.action;
+
+            // อัปเดตสีปุ่ม
+            const buttons = document.querySelectorAll('.controls button');
+            buttons.forEach((btn, i) => {
+                if (i === index) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+        }
+
+        // สร้างปุ่มอัตโนมัติจากข้อมูล
+        const btnContainer = document.getElementById('btn-container');
+        signalsData.forEach((signal, index) => {
+            const btn = document.createElement('button');
+            btn.innerText = signal.name;
+            if(index === 0) btn.classList.add('active'); // ตั้งค่าเริ่มต้นที่ท่าปกติ
+            btn.onclick = () => setSignal(index);
+            btnContainer.appendChild(btn);
+        });
+
+        // โหลดค่าเริ่มต้น (ท่าปกติ)
+        setSignal(0);
+
+    </script>
+</body>
+</html>
